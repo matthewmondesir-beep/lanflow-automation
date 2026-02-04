@@ -14,28 +14,26 @@ jobs:
         run: |
           echo "Starting Langflow workflow execution..."
           
-          PAYLOAD='{"output_type":"chat","input_type":"text","input_value":"Automated trigger from GitHub Actions"}'
-          
           response=$(curl -L -w "\nHTTP_CODE:%{http_code}" \
             --request POST \
             --url 'https://agentstudio.servicesessentials.ibm.com/api/v1/run/f5758db6-035e-4185-ba5b-5d982ac325f8?stream=false' \
             --header 'Content-Type: application/json' \
-            --header 'Content-Length: '"${#PAYLOAD}" \
+            --header 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' \
+            --header 'Accept: application/json' \
             --header 'x-api-key: ${{ secrets.LANGFLOW_API_KEY }}' \
-            --data "$PAYLOAD" \
-            --silent)
+            --data '{"output_type":"chat","input_type":"text","input_value":"Automated trigger"}' \
+            --compressed)
           
-          http_code=$(echo "$response" | grep "HTTP_CODE" | cut -d':' -f2)
-          body=$(echo "$response" | sed '/HTTP_CODE/d')
+          http_code=$(echo "$response" | tail -n1 | cut -d':' -f2)
+          body=$(echo "$response" | sed '$d')
           
           echo "HTTP Status: $http_code"
-          echo "Response Body:"
-          echo "$body"
+          echo "Response: $body"
           
           if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 400 ]; then
-            echo "✅ Workflow executed successfully!"
+            echo "✅ Success!"
             exit 0
           else
-            echo "❌ Workflow execution failed with status $http_code"
+            echo "❌ Failed with status $http_code"
             exit 1
           fi
