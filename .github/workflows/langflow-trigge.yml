@@ -32,9 +32,11 @@ jobs:
           
           url = "https://agentstudio.servicesessentials.ibm.com/api/v1/run/f5758db6-035e-4185-ba5b-5d982ac325f8"
           
+          api_key = os.environ.get("LANGFLOW_API_KEY", "").strip()
+          
           headers = {
               "Content-Type": "application/json",
-              "x-api-key": os.environ.get("LANGFLOW_API_KEY"),
+              "x-api-key": api_key,
               "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
               "Accept": "application/json"
           }
@@ -58,7 +60,7 @@ jobs:
               )
               
               print(f"Status Code: {response.status_code}")
-              print(f"Response: {response.text}")
+              print(f"Response: {response.text[:500]}")
               
               if 200 <= response.status_code < 400:
                   print("✅ Workflow executed successfully!")
