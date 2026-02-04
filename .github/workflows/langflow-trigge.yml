@@ -10,30 +10,64 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Trigger Langflow Workflow
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
         run: |
-          echo "Starting Langflow workflow execution..."
+          pip install requests
+      
+      - name: Trigger Langflow Workflow
+        env:
+          LANGFLOW_API_KEY: ${{ secrets.LANGFLOW_API_KEY }}
+        run: |
+          python << 'EOF'
+          import requests
+          import json
+          import os
           
-          response=$(curl -L -w "\nHTTP_CODE:%{http_code}" \
-            --request POST \
-            --url 'https://agentstudio.servicesessentials.ibm.com/api/v1/run/f5758db6-035e-4185-ba5b-5d982ac325f8?stream=false' \
-            --header 'Content-Type: application/json' \
-            --header 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' \
-            --header 'Accept: application/json' \
-            --header 'x-api-key: ${{ secrets.LANGFLOW_API_KEY }}' \
-            --data '{"output_type":"chat","input_type":"text","input_value":"Automated trigger"}' \
-            --compressed)
+          print("Starting Langflow workflow execution...")
           
-          http_code=$(echo "$response" | tail -n1 | cut -d':' -f2)
-          body=$(echo "$response" | sed '$d')
+          url = "https://agentstudio.servicesessentials.ibm.com/api/v1/run/f5758db6-035e-4185-ba5b-5d982ac325f8"
           
-          echo "HTTP Status: $http_code"
-          echo "Response: $body"
+          headers = {
+              "Content-Type": "application/json",
+              "x-api-key": os.environ.get("LANGFLOW_API_KEY"),
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+              "Accept": "application/json"
+          }
           
-          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 400 ]; then
-            echo "✅ Success!"
-            exit 0
-          else
-            echo "❌ Failed with status $http_code"
-            exit 1
-          fi
+          data = {
+              "output_type": "chat",
+              "input_type": "text",
+              "input_value": "Automated trigger from GitHub Actions"
+          }
+          
+          params = {"stream": "false"}
+          
+          try:
+              response = requests.post(
+                  url,
+                  headers=headers,
+                  json=data,
+                  params=params,
+                  allow_redirects=True,
+                  timeout=30
+              )
+              
+              print(f"Status Code: {response.status_code}")
+              print(f"Response: {response.text}")
+              
+              if 200 <= response.status_code < 400:
+                  print("✅ Workflow executed successfully!")
+                  exit(0)
+              else:
+                  print(f"❌ Workflow execution failed with status {response.status_code}")
+                  exit(1)
+                  
+          except Exception as e:
+              print(f"❌ Error: {str(e)}")
+              exit(1)
+          EOF
