@@ -2,9 +2,8 @@ name: Langflow Automation
 
 on:
   schedule:
-    # Runs every 2 hours
     - cron: '0 */2 * * *'
-  workflow_dispatch: # Allows manual triggering
+  workflow_dispatch:
 
 jobs:
   trigger-langflow:
@@ -15,27 +14,28 @@ jobs:
         run: |
           echo "Starting Langflow workflow execution..."
           
-          response=$(curl -L --request POST \
+          PAYLOAD='{"output_type":"chat","input_type":"text","input_value":"Automated trigger from GitHub Actions"}'
+          
+          response=$(curl -L -w "\nHTTP_CODE:%{http_code}" \
+            --request POST \
             --url 'https://agentstudio.servicesessentials.ibm.com/api/v1/run/f5758db6-035e-4185-ba5b-5d982ac325f8?stream=false' \
             --header 'Content-Type: application/json' \
+            --header 'Content-Length: '"${#PAYLOAD}" \
             --header 'x-api-key: ${{ secrets.LANGFLOW_API_KEY }}' \
-            --data '{
-              "output_type": "chat",
-              "input_type": "text",
-              "input_value": "Automated trigger from GitHub Actions"
-            }' \
-            --write-out "\nHTTP_STATUS:%{http_code}" \
+            --data "$PAYLOAD" \
             --silent)
           
-          http_status=$(echo "$response" | grep "HTTP_STATUS" | cut -d':' -f2)
-          body=$(echo "$response" | sed '/HTTP_STATUS/d')
+          http_code=$(echo "$response" | grep "HTTP_CODE" | cut -d':' -f2)
+          body=$(echo "$response" | sed '/HTTP_CODE/d')
           
-          echo "HTTP Status: $http_status"
-          echo "Response: $body"
+          echo "HTTP Status: $http_code"
+          echo "Response Body:"
+          echo "$body"
           
-          if [ "$http_status" -ge 200 ] && [ "$http_status" -lt 400 ]; then
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 400 ]; then
             echo "✅ Workflow executed successfully!"
+            exit 0
           else
-            echo "❌ Workflow execution failed"
+            echo "❌ Workflow execution failed with status $http_code"
             exit 1
           fi
