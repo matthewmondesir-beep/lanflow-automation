@@ -1,0 +1,41 @@
+name: Langflow Automation
+
+on:
+  schedule:
+    # Runs every 2 hours
+    - cron: '0 */2 * * *'
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  trigger-langflow:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Langflow Workflow
+        run: |
+          echo "Starting Langflow workflow execution..."
+          
+          response=$(curl -L --request POST \
+            --url 'https://agentstudio.servicesessentials.ibm.com/api/v1/run/f5758db6-035e-4185-ba5b-5d982ac325f8?stream=false' \
+            --header 'Content-Type: application/json' \
+            --header 'x-api-key: ${{ secrets.LANGFLOW_API_KEY }}' \
+            --data '{
+              "output_type": "chat",
+              "input_type": "text",
+              "input_value": "Automated trigger from GitHub Actions"
+            }' \
+            --write-out "\nHTTP_STATUS:%{http_code}" \
+            --silent)
+          
+          http_status=$(echo "$response" | grep "HTTP_STATUS" | cut -d':' -f2)
+          body=$(echo "$response" | sed '/HTTP_STATUS/d')
+          
+          echo "HTTP Status: $http_status"
+          echo "Response: $body"
+          
+          if [ "$http_status" -ge 200 ] && [ "$http_status" -lt 400 ]; then
+            echo "✅ Workflow executed successfully!"
+          else
+            echo "❌ Workflow execution failed"
+            exit 1
+          fi
