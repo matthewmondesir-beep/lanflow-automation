@@ -2,7 +2,7 @@ name: Langflow Automation
 
 on:
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '*/5 * * * *'  # Every 5 minutes (TESTING)
   workflow_dispatch:
 
 jobs:
@@ -27,8 +27,9 @@ jobs:
           import requests
           import json
           import os
+          from datetime import datetime
           
-          print("Starting Langflow workflow execution...")
+          print(f"🚀 Starting Langflow workflow execution at {datetime.now()}")
           
           url = "https://agentstudio.servicesessentials.ibm.com/api/v1/run/f5758db6-035e-4185-ba5b-5d982ac325f8"
           
@@ -44,7 +45,7 @@ jobs:
           data = {
               "output_type": "chat",
               "input_type": "text",
-              "input_value": "Automated trigger from GitHub Actions"
+              "input_value": f"TEST: Automated trigger at {datetime.now()}"
           }
           
           params = {"stream": "false"}
